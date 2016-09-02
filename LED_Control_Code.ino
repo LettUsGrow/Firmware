@@ -10,33 +10,77 @@ LED Light Intensity Control
 
  */
 
-int led1 = 9; // the PWM pin the LED is attached to
-int led2 = 10;
-int brightness = 100;   // how bright the LED is
-int fadeAmount = 5;    // how many points to fade the LED by
+int led1 = 5; // the PWM pin the LED is attached to
+int led2 = 6;
+int led3 = 9;
+int led4 = 10;
+int fogger = 0; // set fogger output pin no. (not PWM)
+// int ambientlight = A0; //set light sensor input pin
+
+
+// SET DEFAULT VARIABLES
+int defaultbrightness = 100;   // Default LED desired brightness %age
+int fadeAmount = 5;    // LED intensity change steps      %age
+int ledon = 0700;          //set default LED on time       
+int ledoff = 0800;         //set default LED off time
+int fogon = ledon;         //set fogger on time
+int fogoff = ledoff;       //set fogger off time
+int foghumidity = 100;    // set default desired fog humidity %age
+int startbrightness = 0;
 
 // the setup routine runs once when you press reset:
 void setup() {
-  // declare pin 9 and 10 to be an output:
+  // declare led pins to be an output:
   pinMode(led1, OUTPUT);
   pinMode(led2, OUTPUT);
+  pinMode(led3, OUTPUT);
+  pinMode(led4, OUTPUT);
+  pinMode(fogger, OUTPUT);
+  //declare input pins
+  pinMode(A0, INPUT);
+  // set variables
+  int targetbrightness = defaultbrightness;
+  int ledbrightness = startbrightness;
+  analogWrite(led1, ledbrightness);
+  
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
-  // set the brightness of pin 9:
-  analogWrite(led1, brightness);
-  analogWrite(led2, brightness);
+ // set local clock
+ // should the lights be on?
+ //if(hour() >= hour(ledon){
+ 
 
-  // change the brightness for next time through the loop:
-   // brightness = brightness + fadeAmount;
-
-  // reverse the direction of the fading at the ends of the fade:
-  if (brightness <= 0 || brightness >= 255) {
-    fadeAmount = -fadeAmount ;
+  int ambientbrightness = 100*A0/1023;  //read ambient light sensor %age
+  
+  if(ambientbrightness<targetbrightness){    //if the ambient brightness is lower than the target brightness
+   int ledtargetbrightness = targetbrightness-ambientbrightness;   //calculate the additional LED brighness to top upto perfect
+   
+   if (ledbrightness != ledtargetbrightness){ //if the current led brightness is not correct the change it
+    ledbrightness = ledbrightness + sign(ledtargetbrightness);  //increase or decrease the brightness by the step amount
+    analogWrite(led1, ledbrightness); //output the new value
+   }
   }
-  // wait for 30 milliseconds to see the dimming effect
-  delay(30);
-  // wait for 3 seconds between phases
-  //delay(3000);
+ //}
+}
+
+void ServerSet(){  //ping the server to set variables
+  // capture desired brightness from the server
+  
+  // set local clock from system clock
+ 
+  //set light on time
+  
+  //set light off time
+  
+  //set fogger on time
+  
+  //set fogger off time
+  
+  //set fogger humidty from server
+}
+
+void ServerData{  //send data to the server
+}
 }
