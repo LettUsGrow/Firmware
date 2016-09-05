@@ -7,93 +7,111 @@ LED Light Intensity Control
  a "~" sign, like ~3, ~5, ~6, ~9, ~10 and ~11.
  */
 
-int led1 = 5; // the PWM pin the LED is attached to
-int led2 = 6;
-int led3 = 9;
-int led4 = 10;
-int fogger = 0; // set fogger output pin no. (not PWM)
-int ambientlight = A0; //set light sensor input pin
+// include libraries
+
+#include<Time.h>
+#include <TimeAlarms.h> // seems to be needed to use setTime command
+
+//Set pin variables
+
+int ledredpin = 5;              //set red led pin
+int ledbluepin = 6;             // set blue led pin
+int lightsensorpin = A0;        //set light sensor pin
+
+int foggerpin = 4;              //set fogger output pin
+int humiditysensorpin = A1;     // set humidty sensor pin
+
+int watersensorpin = A2;        // set water sensor pin
+
+// Set defalt operating values
+
+int targetbrightness = 100;     // target light intensity as %age
+int lightpgain = 1;             // proportional gain for light control code CURRENTLY UNUSED
 
 
-// SET DEFAULT VARIABLES
-int defaultbrightness = 100;   // Default LED desired brightness %age
-int fadeamount = 1;    // LED intensity change steps      %age
-int ledon ;          //set default LED on time       
-int ledoff;         //set default LED off time
-int fogon = ledon;         //set fogger on time
-int fogoff = ledoff;       //set fogger off time
-int foghumidity = 100;    // set default desired fog humidity %age
-int startbrightness = 0;
-int targetbrightness;
-int ledbrightness;
+int targethumidity = 50;        // target humidty as %age CURRENTLY UNUSED
 
-// the setup routine runs once when you press reset:
+//LED and fog starting values
+int ledon = 0;
+int fog = 0;
+
+// set fogger start and end hour
+int foggeronhour = 8;
+int foggeroffhour = 20;
+
+// set light start and end hour
+int lightonhour = 8;
+int lightoffhour = 20;
+
+//set starting light brightness
+int ledbrightness = 0;
+int redbalance = 0.5;
+
+
 void setup() {
-  // declare led pins to be an output:
-  pinMode(led1, OUTPUT);
-  //pinMode(led2, OUTPUT);
-  //pinMode(led3, OUTPUT);
-  //pinMode(led4, OUTPUT);
-  //pinMode(fogger, OUTPUT);
-  //declare input pins
-  pinMode(A0, INPUT);
-  // set variables
-  targetbrightness = defaultbrightness;
-  ledbrightness = startbrightness;
-  analogWrite(led1, ledbrightness);
 
-  //setup serial output for Pot (testing only)
+  //set output pins
+  pinMode(ledredpin, OUTPUT);
+  pinMode(ledbluepin, OUTPUT);
+  pinMode(foggerpin, OUTPUT);
+
+  //set input pins
+  pinMode(lightsensorpin, INPUT);
+  pinMode(humiditysensorpin, INPUT);
+  pinMode(watersensorpin, INPUT);
+
+  //set local clock
+  setTime(7, 59, 50, 1, 1, 2016);
+
+  // start serial output
   Serial.begin(9600);
-    
+
+  // set variables
+  ledbrightness = 0;
+
 }
 
-// the loop routine runs over and over again forever:
 void loop() {
- // set local clock
- // should the lights be on?
- //if(hour() >= hour(ledon)){
+  int ambientbrightness = analogRead(lightsensorpin) / 10.23;  // reads the input from the light sensor and normalises to %age of the max 1023 output
 
+  if ( (hour() >= foggeronhour) && (hour() < foggeroffhour)) {  // checks if the fogger should be on
+    fog = 1; //placeholder for now
+    digitalWrite(foggerpin, HIGH);                              // signal to turn on fogger relay
 
- 
-  int ambientbrightness = analogRead(A0)/10.23;  //read ambient light sensor %age
- Serial.print(ambientbrightness);
- Serial.print("    ");
- Serial.print(ledbrightness);
-   Serial.print("    ");
- Serial.println(ledbrightness*2.56);
- 
-  if(ambientbrightness < targetbrightness){    //if the ambient brightness is lower than the target brightness
-   int ledtargetbrightness = targetbrightness-ambientbrightness;   //calculate the additional LED brighness to top upto perfect
-   
-   if (ledbrightness < ledtargetbrightness){ //if the current led brightness is not correct the change it
-    ledbrightness = ledbrightness + fadeamount;  //increase or decrease the brightness by the step amount
-    analogWrite(led1, ledbrightness*2.56-2.56); //output the new value
-   }
-   if (ledbrightness > ledtargetbrightness){ //if the current led brightness is not correct the change it
-    ledbrightness = ledbrightness - fadeamount;  //increase or decrease the brightness by the step amount
-    analogWrite(led1, ledbrightness*2.56-2.56); //output the new value
-   }
-   delay(25);
   }
- //}
-}
+  else {
+    fog = 0;
+    digitalWrite(foggerpin, LOW);                               // signal to turn off fogger relay
+  }
+  
+  if ((hour() >= lightonhour) && (hour() < lightoffhour)){     // checks the lights should be on
+    if( ambientbrightness < targetbrightness ){                // check the light needs topping up
+      ledbrightness = targetbrightness - ambientbrightness -1;  //-1 ensures the LED doesnt light up at zero output
+      
+      analogWrite(ledredpin, redbalance*(ledbrightness*2.55));        // output to red led
+      analogWrite(ledbluepin, (1-redbalance)*(ledbrightness*2.55));   //output to blue led
+    }
+    else{
+      ledbrightness = 0;
+      analogWrite(ledredpin, ledbrightness);
+      analogWrite(ledbluepin, ledbrightness);
+    }
+  }
+  else{
+    analogWrite(ledredpin, 0);
+    analogWrite(ledbluepin, 0);
+  }
+  
 
-void ServerSet(){  //ping the server to set variables
-  // capture desired brightness from the server
-  
-  // set local clock from system clock
- 
-  //set light on time
-  
-  //set light off time
-  
-  //set fogger on time
-  
-  //set fogger off time
-  
-  //set fogger humidty from server
-}
+  Serial.print(hour());
+  Serial.print(":");
+  Serial.print(minute());
+  Serial.print(":");
+  Serial.print(second());
+  Serial.print("  Ambient Brightness: ");
+  Serial.print(ambientbrightness);
+  Serial.print("   LED: ");
+  Serial.println(ledbrightness*2.55);
 
-void ServerData(){  //send data to the server
 
 }
