@@ -7,6 +7,7 @@ LED Light Intensity Control
  a "~" sign, like ~3, ~5, ~6, ~9, ~10 and ~11.
  */
 
+
 // include libraries
 
 #include<Time.h>
@@ -25,11 +26,14 @@ int watersensorpin = A2;        // set water sensor pin
 
 // Set defalt operating values
 
-int targetbrightness = 100;     // target light intensity as %age
+int targetbrightness = 80;     // target light intensity as %age
 int lightpgain = 1;             // proportional gain for light control code CURRENTLY UNUSED
 
+int targethumidity = 50;        // target humidty as %age
+int humiditylow = 25;
 
-int targethumidity = 50;        // target humidty as %age CURRENTLY UNUSED
+int warningwaterlevel = 50;     // water level %age to display warning
+int stopwaterlevel = 25;        // water level %age to terminate fogger
 
 //LED and fog starting values
 int ledon = 0;
@@ -45,7 +49,13 @@ int lightoffhour = 20;
 
 //set starting light brightness
 int ledbrightness = 0;
-int redbalance = 0.5;
+float redbalance = 0.6;
+int red;
+int blue;
+
+// water level warnings
+
+String warning;
 
 
 void setup() {
@@ -72,24 +82,43 @@ void setup() {
 }
 
 void loop() {
-  int ambientbrightness = analogRead(lightsensorpin) / 10.23;  // reads the input from the light sensor and normalises to %age of the max 1023 output
+  int ambientbrightness = 100 - (analogRead(lightsensorpin) / 10.23);   // reads the input from the light sensor and normalises to %age of the max 1023 output
+  int waterlevel = analogRead(watersensorpin) / 10.23;                  // reads the water level sensor and converts to %age
+  int humidity = analogRead(humiditysensorpin) / 10.23;                 // reads humidity sensor as a %age
 
-  if ( (hour() >= foggeronhour) && (hour() < foggeroffhour)) {  // checks if the fogger should be on
-    fog = 1; //placeholder for now
-    digitalWrite(foggerpin, HIGH);                              // signal to turn on fogger relay
-
+  if ( waterlevel <= 50 && waterlevel > 25 ) {
+    warning = "Water low";
+  }
+  else if ( waterlevel <= 25 ) {
+    warning = "No Water";
   }
   else {
-    fog = 0;
-    digitalWrite(foggerpin, LOW);                               // signal to turn off fogger relay
+    warning = "Water ok";
+  }
+
+ 
+  if ( (hour() >= foggeronhour) && (hour() < foggeroffhour) && (waterlevel >= 25)){  // checks if the fogger should be on
+    if (humidity < humiditylow){
+      fog = 1; //placeholder for now
+      digitalWrite(foggerpin, HIGH);                              // signal to turn on fogger relay
+    }
+    else if( humidity >= targethumidity) {
+      fog = 0;
+      digitalWrite(foggerpin, LOW);
+    }
   }
   
   if ((hour() >= lightonhour) && (hour() < lightoffhour)){     // checks the lights should be on
     if( ambientbrightness < targetbrightness ){                // check the light needs topping up
-      ledbrightness = targetbrightness - ambientbrightness -1;  //-1 ensures the LED doesnt light up at zero output
+      ledbrightness = 0.25* (targetbrightness - ambientbrightness -1) ;  //-1 ensures the LED doesnt light up at zero output
+
+      red = redbalance*ledbrightness*2.55;
+      blue = (1-redbalance)*(ledbrightness*2.55);
+
+
       
-      analogWrite(ledredpin, redbalance*(ledbrightness*2.55));        // output to red led
-      analogWrite(ledbluepin, (1-redbalance)*(ledbrightness*2.55));   //output to blue led
+      analogWrite(ledredpin, red);        // output to red led
+      analogWrite(ledbluepin, blue);   //output to blue led
     }
     else{
       ledbrightness = 0;
@@ -101,17 +130,26 @@ void loop() {
     analogWrite(ledredpin, 0);
     analogWrite(ledbluepin, 0);
   }
-  
-
   Serial.print(hour());
   Serial.print(":");
   Serial.print(minute());
   Serial.print(":");
   Serial.print(second());
-  Serial.print("  Ambient Brightness: ");
+  Serial.print("  Ambient: ");
   Serial.print(ambientbrightness);
   Serial.print("   LED: ");
-  Serial.println(ledbrightness*2.55);
-
-
+  Serial.print("Red: ");
+  Serial.print(red);
+  Serial.print("  Blue: ");
+  Serial.print(blue);
+  Serial.print("   All: ");
+  Serial.print(ledbrightness);
+  Serial.print("   Water level: ");
+  Serial.print(waterlevel);
+  Serial.print("   Humidity: ");
+  Serial.print(humidity);
+  Serial.print("   Fogger: ");
+  Serial.print(fog);
+  Serial.print("   ");
+  Serial.println(warning);
 }
