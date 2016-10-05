@@ -6,7 +6,6 @@ LED Light Intensity Control
  Arduino, the PWM pins are identified with 
  a "~" sign, like ~3, ~5, ~6, ~9, ~10 and ~11.
  */
-
 #include <SimpleDHT.h>
 
 SimpleDHT11 DHT11;
@@ -21,6 +20,9 @@ SimpleDHT11 DHT11;
 #include <SimpleTimer.h>
 #include <WidgetRTC.h>
 
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 
 
   //  Set global variables
@@ -37,7 +39,7 @@ int watersensorswitch = D6;
 
 // Set defalt operating values
 
-int targetbrightness = 80;     // target light intensity as %age
+int targetbrightness = 100;     // target light intensity as %age
 
 int targethumidity = 50;        // target humidty as %age
 int humiditylow = 25;
@@ -94,8 +96,8 @@ BLYNK_ATTACH_WIDGET(rtc,V5);
 
 char auth[] = "15721cd4ce454bc99a15c7073f5e9ac9";
 
-char ssid[] = "Triangle";
-char pass[] = "CliftonLife6";
+const char ssid[] = "LetUsGrow";
+const char pass[] = "welovesalad";
 
 WiFiClient client;
 
@@ -119,6 +121,48 @@ void setup() {
   pinMode(lightsensorpin, INPUT);
   pinMode(humiditysensorpin, INPUT);
   pinMode(watersensorpin, INPUT);
+
+// Set-up OTA code updates
+
+Serial.println("Booting");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, pass);
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Connection Failed! Rebooting...");
+    delay(5000);
+    ESP.restart();
+  }
+
+  // Port defaults to 8266
+ // ArduinoOTA.setPort(8266);
+
+  // Hostname defaults to esp8266-[ChipID]
+ // ArduinoOTA.setHostname("myesp8266");
+
+  // No authentication by default
+ // ArduinoOTA.setPassword((const char *)"123");
+
+  ArduinoOTA.onStart([]() {
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+  ArduinoOTA.begin();
+  Serial.println("Ready");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 
   Serial.println("Set time");
   
@@ -144,19 +188,20 @@ void setup() {
 
 void loop() {
   //Read sensors
-  digitalWrite(lightsensorswitch, HIGH);
-  delay(10);
-  ambientbrightness = analogRead(lightsensorpin)/10.23;
-  delay(10);
-  digitalWrite(lightsensorswitch, LOW);
+  //digitalWrite(lightsensorswitch, HIGH);
+  //delay(10);
+  //ambientbrightness = analogRead(lightsensorpin)/10.23;
+  ambientbrightness = 0;
+  //delay(10);
+  //digitalWrite(lightsensorswitch, LOW);
 
-  delay(10);
+  //delay(10);
 
-  digitalWrite(watersensorswitch, HIGH);
-  delay(10);
-  waterlevel = analogRead(watersensorpin) / 10.23;                  // reads the water level sensor and converts to %age
-  delay(10);
-  digitalWrite(watersensorswitch, LOW);
+  //digitalWrite(watersensorswitch, HIGH);
+  //delay(10);
+  //waterlevel = analogRead(watersensorpin) / 10.23;                  // reads the water level sensor and converts to %age
+  //delay(10);
+  //digitalWrite(watersensorswitch, LOW);
   
 //Serial.println("read hum temp");
   DHT11.read(humiditysensorpin, &temperature, &humidity, NULL);
@@ -199,7 +244,7 @@ void loop() {
   }
   else {
     Blynk.setProperty(V4, "color", "#04C0F8");
-  }
+  }\
 */
 //Serial.println("run fog logic");
   
@@ -221,6 +266,9 @@ void loop() {
      
       analogWrite(ledredpin, red);        // output to red led
       analogWrite(ledbluepin, blue);   //output to blue led
+      //digitalWrite(ledredpin, HIGH);
+      //digitalWrite(ledbluepin, HIGH);
+    
     }
     else{
       ledbrightness = 0;
