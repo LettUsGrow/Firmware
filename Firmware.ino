@@ -6,6 +6,14 @@ LED Light Intensity Control
  Arduino, the PWM pins are identified with 
  a "~" sign, like ~3, ~5, ~6, ~9, ~10 and ~11.
  */
+/*
+LED Light Intensity Control
+ The analogWrite() function uses PWM, so if
+ you want to change the pin you're using, be
+ sure to use another PWM capable pin. On most
+ Arduino, the PWM pins are identified with 
+ a "~" sign, like ~3, ~5, ~6, ~9, ~10 and ~11.
+ */
 #include <SimpleDHT.h>
 
 SimpleDHT11 DHT11;
@@ -30,7 +38,7 @@ int ledredpin = D1;              //set red led pin
 int ledbluepin = D2;             // set blue led pin
 int lightsensorpin = A0;        //set light sensor pin
 
-int foggerpin = D4;              //set fogger output pin
+int foggerpin = D0;              //set fogger output pin
 int humiditysensorpin = D8;     // set humidty sensor pin
 
 int watersensorpin = A0;        // set water sensor in
@@ -96,8 +104,8 @@ BLYNK_ATTACH_WIDGET(rtc,V5);
 
 char auth[] = "15721cd4ce454bc99a15c7073f5e9ac9";
 
-const char ssid[] = "LetUsGrow";
-const char pass[] = "welovesalad";
+const char ssid[] = "Triangle";
+const char pass[] = "CliftonLife6";
 
 WiFiClient client;
 
@@ -134,13 +142,13 @@ Serial.println("Booting");
   }
 
   // Port defaults to 8266
- // ArduinoOTA.setPort(8266);
+ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
- // ArduinoOTA.setHostname("myesp8266");
+ArduinoOTA.setHostname("myesp8266");
 
   // No authentication by default
- // ArduinoOTA.setPassword((const char *)"123");
+ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
@@ -199,15 +207,36 @@ void loop() {
 
   //digitalWrite(watersensorswitch, HIGH);
   //delay(10);
-  //waterlevel = analogRead(watersensorpin) / 10.23;                  // reads the water level sensor and converts to %age
+  //waterlevel = ((analogRead (watersensorpin) / 10.23) - 45) * 2.4;                  // reads the water level sensor and converts to %age
+  // byte waterpercentage = (waterlevel - 58)*3; 
   //delay(10);
   //digitalWrite(watersensorswitch, LOW);
+  
+  waterlevel = 75;
   
 //Serial.println("read hum temp");
   DHT11.read(humiditysensorpin, &temperature, &humidity, NULL);
 
   //run blynk
   Blynk.run();
+
+//Serial.println("run fog logic");
+  
+  if ((hour() >= onhour) && (hour() < offhour) && (minute() >= onminute) && (minute() < offminute) && (waterlevel >= 25)){  // checks if the fogger should be on
+/*    if (humidity < humiditylow){
+      digitalWrite(foggerpin, HIGH);                              // signal to turn on fogger relay
+    }
+    else if( humidity >= targethumidity) {
+      digitalWrite(foggerpin, LOW);
+    }
+*/
+      if ((second()>= 0) && (second()<= 60*targethumidity/100)){
+        digitalWrite(foggerpin, HIGH);  
+      }
+      else{
+        digitalWrite(foggerpin, LOW);
+      }
+  }
   
   //IF wifi, thingspeak, blynk not connected, restart each of them
 
@@ -246,16 +275,7 @@ void loop() {
     Blynk.setProperty(V4, "color", "#04C0F8");
   }\
 */
-//Serial.println("run fog logic");
-  
-  if ((hour() >= onhour) && (hour() < offhour) && (minute() >= onminute) && (minute() < offminute) && (waterlevel >= 25)){  // checks if the fogger should be on
-    if (humidity < humiditylow){
-      digitalWrite(foggerpin, HIGH);                              // signal to turn on fogger relay
-    }
-    else if( humidity >= targethumidity) {
-      digitalWrite(foggerpin, LOW);
-    }
-  }
+
 //Serial.println("run light logic");
     if ((hour() >= onhour) && (hour() < offhour) && (minute() >= onminute) && (minute() < offminute)){     // checks the lights should be on
     if( ambientbrightness < targetbrightness ){                // check the light needs topping up
@@ -299,7 +319,7 @@ void loop() {
   Serial.print("  temp: ");
   Serial.print(temperature);
   Serial.print("  hum: ");
-  Serial.print(targethumidity);
+  Serial.print(humidity);
   Serial.print("  wat: ");
   Serial.print(waterlevel);
   Serial.print("  Start: ");
