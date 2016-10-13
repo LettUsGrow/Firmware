@@ -198,10 +198,10 @@ void loop() {
   //Serial.println("run fog logic");
 
   if ((hour() >= onhour) && (hour() < offhour) && (minute() >= onminute) && (minute() < offminute) && (waterlevel >= 25)) { // checks if the fogger should be on
-    if (humidity < humiditylow) {
-      digitalWrite(foggerpin, HIGH);                              // signal to turn on fogger relay
+    if ((second()>= 0) && (second()<= 60*targethumidity/100)){
+      digitalWrite(foggerpin, HIGH);  
     }
-    else if ( humidity >= targethumidity) {
+    else{
       digitalWrite(foggerpin, LOW);
     }
   }
